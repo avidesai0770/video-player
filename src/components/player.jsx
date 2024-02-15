@@ -1,15 +1,14 @@
-import { Box, Slider } from '@material-ui/core'
 import { VolumeDown, VolumeUp } from '@mui/icons-material'
-import { Stack } from '@mui/material'
 import React from 'react'
 import { useRef, useState } from 'react'
+import { PlayArrowSharp, Pause } from '@mui/icons-material'
+import { Fullscreen } from '@mui/icons-material'
 
 export default function Player() {
   const videoRef = useRef(null)
   const playerRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [volume, setVolume] = useState(1)
 
@@ -65,10 +64,61 @@ export default function Player() {
     },
   ])
 
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying)
+    if (videoRef.current.paused) {
+      videoRef.current.play()
+    } else {
+      videoRef.current.pause()
+    }
+  }
+  const handleVolume = (vol) => {
+    setVolume(vol)
+    videoRef.current.volume = vol
+  }
+
+  const handleSpeedChange = (speed) => {
+    setPlaybackSpeed(speed)
+    videoRef.current.playbackRate = speed
+  }
+
   return (
-    <div className="">
-      <div className="w-full md:w-2/3 lg:w-1/2" ref={playerRef}>
+    <div className="flex justify-center">
+      <div
+        className="w-full md:w-100% lg:w-100% md:mx-6 lg:mx-6"
+        ref={playerRef}
+      >
         <video ref={videoRef} src={playlist[currentVideoIndex].sources}></video>
+        <div className="mt-4 flex flex-row justify-between">
+          <div className="border">
+            <button onClick={handlePlayPause}>
+              {isPlaying ? <Pause /> : <PlayArrowSharp />}
+            </button>
+            <VolumeDown />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={volume}
+              onChange={(e) => handleVolume(e.target.value)}
+            />
+            <VolumeUp />
+          </div>
+          <div className="flex-row flex">
+            <h4 className="mr-1">Playback Speed</h4>
+            <select
+              value={playbackSpeed}
+              onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+            >
+              <option value={0.5}>0.5x</option>
+              <option value={1}>Normal</option>
+              <option value={1.5}>1.5x</option>
+              <option value={2}>2x</option>
+            </select>
+          </div>
+          <Fullscreen />
+        </div>
       </div>
     </div>
   )
