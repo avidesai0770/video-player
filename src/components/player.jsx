@@ -3,14 +3,17 @@ import React from 'react'
 import { useRef, useState } from 'react'
 import { PlayArrowSharp, Pause } from '@mui/icons-material'
 import { Fullscreen } from '@mui/icons-material'
+import { Minimize } from '@mui/icons-material'
 
 export default function Player() {
   const videoRef = useRef(null)
   const playerRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  const [isFullView, setFullView] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [volume, setVolume] = useState(1)
+  const [volume, setVolume] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [videoIndex, setVideoIndex] = useState(0)
 
   const [playlist, setPlaylist] = useState([
     {
@@ -82,19 +85,58 @@ export default function Player() {
     videoRef.current.playbackRate = speed
   }
 
+  const handleFullView = () => {
+    if (!document.fullscreenElement) {
+      setFullView(true)
+      playerRef.current.requestFullscreen().catch((err) => {
+        console.log(
+          `Error attempting to enable full-screen mode: ${err.message} (${err.name})`
+        )
+      })
+    } else {
+      setFullView(false)
+      document.exitFullscreen()
+    }
+  }
+
+  const handleTimeUpdate = () => {
+    setCurrentTime(videoRef.current.currentTime)
+  }
+
+  const handleSeek = (time) => {
+    videoRef.current.currentTime = time
+    setCurrentTime(time)
+  }
+
+  const handleVideoEnd = () => {
+    // Play next video in the playlist
+    if (videoIndex < playlist.length - 1) {
+      setVideoIndex(videoIndex + 1)
+    } else {
+      setVideoIndex(0) // Loop playlist
+    }
+  }
+
   return (
     <div className="flex justify-center">
       <div
         className="w-full md:w-100% lg:w-100% md:mx-6 lg:mx-6"
         ref={playerRef}
       >
-        <video ref={videoRef} src={playlist[currentVideoIndex].sources}></video>
-        <div className="mt-4 flex flex-row justify-between">
-          <div className="border">
+        <video
+          onTimeUpdate={handleTimeUpdate}
+          ref={videoRef}
+          src={playlist[videoIndex].sources}
+          // onTimeUpdate={handleTimeUpdate}
+          onEnded={handleVideoEnd}
+          playbackRate={playbackSpeed}
+        ></video>
+        <div className=" bg-black bg-opacity-50 flex items-center justify-between p-2">
+          <div className="flex items-center">
             <button onClick={handlePlayPause}>
               {isPlaying ? <Pause /> : <PlayArrowSharp />}
             </button>
-            <VolumeDown />
+            <VolumeDown color="white" />
             <input
               type="range"
               min={0}
@@ -104,9 +146,21 @@ export default function Player() {
               onChange={(e) => handleVolume(e.target.value)}
             />
             <VolumeUp />
+            <input
+              type="range"
+              min={0}
+              max={videoRef.current ? videoRef.current.duration : 0}
+              value={currentTime}
+              onChange={(e) => handleSeek(e.target.value)}
+              className="mx-2"
+            />
+            <span className="text-white">
+              {Math.floor(currentTime)} /{' '}
+              {Math.floor(videoRef.current ? videoRef.current.duration : 0)}
+            </span>
           </div>
-          <div className="flex-row flex">
-            <h4 className="mr-1">Playback Speed</h4>
+          <div className="flex items-center">
+            <h4 className="mr-1">Speed</h4>
             <select
               value={playbackSpeed}
               onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
@@ -116,8 +170,10 @@ export default function Player() {
               <option value={1.5}>1.5x</option>
               <option value={2}>2x</option>
             </select>
+            <button onClick={handleFullView}>
+              {isFullView ? <Minimize /> : <Fullscreen />}
+            </button>
           </div>
-          <Fullscreen />
         </div>
       </div>
     </div>
